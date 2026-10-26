@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KaramStay PG Rental | Umbrella Demo App</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="brand-section">
+      <div class="brand-logo">🏠 KaramStay</div>
+      <div>
+        <div style="font-weight:700; font-size:1.1rem;">Smart PG Rental & Tenant Management</div>
+        <div style="font-size:0.8rem; color:var(--text-muted);">Umbrella Demo Microservice & Concurrency Benchmark</div>
+      </div>
+      <span class="brand-badge">Koramangala Luxury PG</span>
+    </div>
+
+    <div class="hud-container">
+      <div class="hud-card">
+        <div class="hud-label">Backend Health</div>
+        <div class="hud-value" id="hud-backend-status" style="color:var(--accent-green);">HEALTHY</div>
+      </div>
+      <div class="hud-card">
+        <div class="hud-label">DB QueuePool</div>
+        <div class="hud-value" id="hud-pool-size">POOL_SIZE = 2</div>
+      </div>
+      <div class="hud-card">
+        <div class="hud-label">Checked Out</div>
+        <div class="hud-value" id="hud-pool-checkedout" style="color:#60a5fa;">0 / 2</div>
+      </div>
+      <div class="hud-card">
+        <div class="hud-label">UMBRELLA Protection</div>
+        <div class="hud-value" id="hud-umbrella-status" style="color:var(--accent-green);">CONNECTED</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Chaos Traffic & Concurrency Engine (Hero Control Panel) -->
+  <div class="chaos-panel">
+    <div class="chaos-header">
+      <div class="chaos-title">
+        <span>⚡ CONCURRENCY & CHAOS SIMULATOR</span>
+        <span style="font-size:0.75rem; background:#1e3a8a; color:#93c5fd; padding:2px 8px; border-radius:4px;">Multi-Tenant Load Engine</span>
+      </div>
+      <div style="font-size:0.8rem; color:var(--text-muted);">
+        Target: <code style="color:#60a5fa;">POST /pay-rent</code> & <code style="color:#60a5fa;">POST /book-room</code>
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button class="btn-danger" id="btn-chaos-10" onclick="trigger10Payments()">
+        ⚡ Fire 10 Simultaneous Payments (1.4s Lock)
+      </button>
+      <button class="btn-warning" id="btn-chaos-100" onclick="trigger100Users()">
+        🔥 Trigger 100 Concurrent Tenants Load (1 RPS)
+      </button>
+      <button class="btn-outline" onclick="resetBackend()">
+        🔄 Reset Backend (POOL_SIZE=2)
+      </button>
+      <button class="btn-success" onclick="triggerUmbrellaHeal()">
+        🛡️ Launch UMBRELLA Auto-Healing (Port 8000)
+      </button>
+      <button class="btn-outline" onclick="window.open('http://localhost:8000', '_blank')">
+        🌐 Open UMBRELLA Mission Control
+      </button>
+    </div>
+
+    <!-- Alert / Crash Status Banner -->
+    <div id="alert-banner" class="alert-box"></div>
+
+    <!-- Real-Time Metrics Strip -->
+    <div class="metrics-strip">
+      <div class="metric-item">
+        <div class="metric-title">Active Checked-Out</div>
+        <div class="metric-number" id="m-checkedout">0</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-title">Pool Utilization</div>
+        <div class="metric-number" id="m-utilization">0%</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-title">Total Requests</div>
+        <div class="metric-number" id="m-total">0</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-title">Failed Requests (500)</div>
+        <div class="metric-number" id="m-failed" style="color:var(--accent-red);">0</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-title">Failure Rate</div>
+        <div class="metric-number" id="m-fail-rate">0%</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-title">Avg Latency</div>
+        <div class="metric-number" id="m-latency">0 ms</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Layout -->
+  <div class="main-layout">
+    <!-- Left Column: Available Rooms & Beds -->
+    <div>
+      <div class="section-title">
+        <span>🛏️ Available PG Rooms & Bed Visualizer</span>
+        <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(Real-time database inventory)</span>
+      </div>
+      <div class="room-grid" id="rooms-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Right Column: Real-Time Event & Crash Log -->
+    <div>
+      <div class="feed-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-weight:700; font-size:0.9rem;">📡 Live Activity & Crash Feed</div>
+          <button class="btn-outline" style="padding:2px 8px; font-size:0.7rem;" onclick="clearEvents()">Clear</button>
+        </div>
+        <div class="feed-container" id="events-container">
+          <div class="feed-item">Karamstay Demo App initialized. Waiting for tenant traffic...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking Modal -->
+  <div class="modal-overlay" id="booking-modal">
+    <div class="modal-box">
+      <h3 style="margin-bottom:14px;">Reserve Bed in Room</h3>
+      <div class="form-group">
+        <label>Selected Room:</label>
+        <input type="text" id="modal-room-number" readonly>
+      </div>
+      <div class="form-group">
+        <label>Tenant Name:</label>
+        <input type="text" id="modal-tenant-name" value="Aarav Sharma">
+      </div>
+      <div class="form-group">
+        <label>Phone Number:</label>
+        <input type="text" id="modal-tenant-phone" value="+91 98765 43210">
+      </div>
+      <div class="form-group">
+        <label>Bed Allocation:</label>
+        <select id="modal-bed-number">
+          <option value="Bed-A">Bed A (Window side)</option>
+          <option value="Bed-B">Bed B (Balcony side)</option>
+        </select>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+        <button class="btn-outline" onclick="closeBookingModal()">Cancel</button>
+        <button class="btn-success" onclick="submitBooking()">Confirm Booking</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Modal -->
+  <div class="modal-overlay" id="payment-modal">
+    <div class="modal-box">
+      <h3 style="margin-bottom:14px;">Process Monthly Rent</h3>
+      <div class="form-group">
+        <label>Booking ID:</label>
+        <input type="number" id="pay-booking-id" value="1">
+      </div>
+      <div class="form-group">
+        <label>Tenant Name:</label>
+        <input type="text" id="pay-tenant-name" value="Aarav Sharma">
+      </div>
+      <div class="form-group">
+        <label>Rent Amount (INR):</label>
+        <input type="number" id="pay-amount" value="8500">
+      </div>
+      <div class="form-group">
+        <label>Payment Method:</label>
+        <select id="pay-method">
+          <option value="UPI / Razorpay">UPI / Razorpay</option>
+          <option value="Credit Card">Credit / Debit Card</option>
+          <option value="NetBanking">NetBanking</option>
+        </select>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+        <button class="btn-outline" onclick="closePaymentModal()">Cancel</button>
+        <button class="btn-primary" onclick="submitPayment()">Pay ₹8,500 Now</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
