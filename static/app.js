@@ -368,3 +368,141 @@ async function submitPayment() {
 function clearEvents() {
   document.getElementById("events-container").innerHTML = '<div class="feed-item">Event log cleared.</div>';
 }
+
+async function triggerSlowQueryLock() {
+  const btn = document.getElementById("btn-chaos-lock");
+  btn.disabled = true;
+  btn.textContent = "🔒 Simulating Lock Contention (>2000ms)...";
+  const banner = document.getElementById("alert-banner");
+  banner.style.display = "none";
+
+  try {
+    const res = await fetch("/api/chaos/slow-query-lock", { method: "POST" });
+    const data = await res.json();
+    document.getElementById("m-total").textContent = data.total_requests;
+    document.getElementById("m-failed").textContent = data.failed_requests;
+    document.getElementById("m-fail-rate").textContent = `${data.failure_rate_pct}%`;
+    document.getElementById("m-latency").textContent = `${data.avg_latency_ms} ms`;
+
+    banner.style.display = "block";
+    banner.className = "alert-box alert-danger";
+    banner.innerHTML = `
+      <strong>🔒 UNINDEXED QUERY & SQLITE EXCLUSIVE LOCK CONTENTION DETECTED:</strong><br>
+      <div style="margin-top:6px;">
+        • <strong>${data.failed_requests}/${data.total_requests} requests crashed</strong> (${data.failure_rate_pct}% failure rate | Verification: <strong>${data.verification_pct}%</strong>).<br>
+        • <strong>Root Exception:</strong> <code>${data.first_error_type}: ${data.first_error_msg}</code><br>
+        • <strong>Incident Dispatched to UMBRELLA:</strong> Agent 1 RCA AST analyzed lock frame; Agent 5 Guardian safety policy engaged.
+      </div>
+    `;
+    pollEvents();
+    pollMetrics();
+  } catch (err) {
+    alert("Lock contention error: " + err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "🔒 Unindexed Query / SQLite Lock Contention (>2000ms)";
+  }
+}
+
+async function triggerJwtAuthCascade() {
+  const btn = document.getElementById("btn-chaos-jwt");
+  btn.disabled = true;
+  btn.textContent = "🔑 Firing Expired JWT Cascade...";
+  const banner = document.getElementById("alert-banner");
+  banner.style.display = "none";
+
+  try {
+    const res = await fetch("/api/chaos/jwt-auth-cascade", { method: "POST" });
+    const data = await res.json();
+    document.getElementById("m-total").textContent = data.total_requests;
+    document.getElementById("m-failed").textContent = data.failed_requests;
+    document.getElementById("m-fail-rate").textContent = `${data.failure_rate_pct}%`;
+    document.getElementById("m-latency").textContent = `${data.avg_latency_ms} ms`;
+
+    banner.style.display = "block";
+    banner.className = "alert-box alert-warning";
+    banner.innerHTML = `
+      <strong>🔑 OAUTH2 / JWT AUTHENTICATION CASCADE INTERCEPTED:</strong><br>
+      <div style="margin-top:6px;">
+        • <strong>${data.failed_requests}/${data.total_requests} invalid tokens intercepted with HTTP 401 Unauthorized</strong> (Verification: <strong>${data.verification_pct}% ENFORCED</strong>).<br>
+        • <strong>Security Policy:</strong> Identity gate verified expired signatures. Zero unauthorized access permitted.<br>
+        • <strong>UMBRELLA Diagnostics:</strong> RCA mapped to Token Validation Middleware (Infosys Responsible AI Toolkit citation).
+      </div>
+    `;
+    pollEvents();
+  } catch (err) {
+    alert("JWT cascade error: " + err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "🔑 Expired JWT / OAuth2 Cascade (HTTP 401)";
+  }
+}
+
+async function triggerGatewayTimeout() {
+  const btn = document.getElementById("btn-chaos-gateway");
+  btn.disabled = true;
+  btn.textContent = "🌐 Tripping External Gateway Timeout...";
+  const banner = document.getElementById("alert-banner");
+  banner.style.display = "none";
+
+  try {
+    const res = await fetch("/api/chaos/gateway-timeout", { method: "POST" });
+    const data = await res.json();
+    document.getElementById("m-total").textContent = data.total_requests;
+    document.getElementById("m-failed").textContent = data.failed_requests;
+    document.getElementById("m-fail-rate").textContent = `${data.failure_rate_pct}%`;
+    document.getElementById("m-latency").textContent = `${data.avg_latency_ms} ms`;
+
+    banner.style.display = "block";
+    banner.className = "alert-box alert-danger";
+    banner.innerHTML = `
+      <strong>🌐 EXTERNAL PAYMENT GATEWAY TIMEOUT & CIRCUIT BREAKER TRIPPED:</strong><br>
+      <div style="margin-top:6px;">
+        • <strong>${data.failed_requests}/${data.total_requests} payments tripped circuit breaker with HTTP 504 Gateway Timeout</strong> (Verification: <strong>${data.verification_pct}%</strong>).<br>
+        • <strong>Circuit Breaker Status:</strong> OPEN. Downstream isolation active to prevent resource exhaustion.<br>
+        • <strong>Telemetry:</strong> Latency spike detected by UMBRELLA sentry.
+      </div>
+    `;
+    pollEvents();
+  } catch (err) {
+    alert("Gateway timeout error: " + err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "🌐 External Gateway Timeout (HTTP 504 / Breaker)";
+  }
+}
+
+async function triggerSchemaCorruption() {
+  const btn = document.getElementById("btn-chaos-schema");
+  btn.disabled = true;
+  btn.textContent = "⚠️ Testing Schema Corruption...";
+  const banner = document.getElementById("alert-banner");
+  banner.style.display = "none";
+
+  try {
+    const res = await fetch("/api/chaos/schema-corruption", { method: "POST" });
+    const data = await res.json();
+    document.getElementById("m-total").textContent = data.total_requests;
+    document.getElementById("m-failed").textContent = data.failed_requests;
+    document.getElementById("m-fail-rate").textContent = `${data.failure_rate_pct}%`;
+    document.getElementById("m-latency").textContent = `${data.avg_latency_ms} ms`;
+
+    banner.style.display = "block";
+    banner.className = "alert-box alert-warning";
+    banner.innerHTML = `
+      <strong>⚠️ PAYLOAD VALIDATION & SCHEMA CORRUPTION BLOCKED:</strong><br>
+      <div style="margin-top:6px;">
+        • <strong>${data.failed_requests}/${data.total_requests} corrupted payloads caught with HTTP 422 Unprocessable Entity</strong> (Verification: <strong>${data.verification_pct}% ENFORCED</strong>).<br>
+        • <strong>Validation Shield:</strong> Strict Pydantic AST schema constraints prevented negative rent and malformed inputs.<br>
+        • <strong>UMBRELLA Sentry:</strong> Zero database contamination. Schema integrity preserved.
+      </div>
+    `;
+    pollEvents();
+  } catch (err) {
+    alert("Schema corruption error: " + err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "⚠️ Payload Schema Corruption (HTTP 422)";
+  }
+}
+

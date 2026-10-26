@@ -26,7 +26,11 @@ from models import Room, Booking, RentPayment
 from load_simulator import (
     run_10_simultaneous_payments,
     run_100_concurrent_tenants_1rps,
-    run_combined_concurrency_chaos
+    run_combined_concurrency_chaos,
+    run_slow_query_lock_chaos,
+    run_expired_jwt_auth_cascade,
+    run_payment_gateway_timeout_chaos,
+    run_schema_corruption_chaos
 )
 from umbrella_sdk import UmbrellaClient, UmbrellaConfig, UmbrellaFastAPIMiddleware
 
@@ -291,6 +295,85 @@ def trigger_combined_chaos_load():
             umbrella_client.report_incident(exc, context={"scenario": "combined_concurrency_chaos", "summary": summary})
     else:
         log_event("CHAOS_COMPLETED", "All 110 concurrent requests processed successfully with 0 errors!", 200)
+
+    return summary
+
+
+@app.post("/api/chaos/slow-query-lock")
+def trigger_slow_query_lock_chaos():
+    """Chaos Engine Button 4: Unindexed Slow Query & SQLite Exclusive Lock Contention (>2000ms delay)."""
+    log_event("CHAOS_TRIGGERED", "Firing Unindexed Slow Query / SQLite Exclusive Lock Contention (>2000ms delay)", 200)
+    summary = run_slow_query_lock_chaos(num_requests=10)
+
+    if summary["failed_requests"] > 0:
+        log_event(
+            "BACKEND_CRASH",
+            f"Lock Contention: {summary['failed_requests']}/10 requests failed (OperationalError / Table Locked)",
+            500,
+            details=summary
+        )
+        if config.UMBRELLA_AGENT_ENABLED:
+            exc = TimeoutError(f"sqlite3.OperationalError: {summary['first_error_msg']}")
+            umbrella_client.report_incident(exc, context={"scenario": "slow_query_lock", "summary": summary})
+    else:
+        log_event("CHAOS_COMPLETED", "Lock contention resolved or handled gracefully.", 200)
+
+    return summary
+
+
+@app.post("/api/chaos/jwt-auth-cascade")
+def trigger_jwt_auth_cascade():
+    """Chaos Engine Button 5: Expired JWT / OAuth2 Authentication Cascade (HTTP 401 Unauthorized)."""
+    log_event("CHAOS_TRIGGERED", "Simulating Expired JWT / OAuth2 Auth Cascade (15 Microservice Calls)", 200)
+    summary = run_expired_jwt_auth_cascade(num_requests=15)
+
+    log_event(
+        "SECURITY_GATE_INTERCEPT",
+        f"Auth Cascade Intercepted: {summary['failed_requests']}/15 requests rejected with 401 Unauthorized (100% Policy Enforced)",
+        401,
+        details=summary
+    )
+    if config.UMBRELLA_AGENT_ENABLED:
+        exc = PermissionError(f"HTTPException: 401 Unauthorized - JWT Token Signature Expired across {summary['failed_requests']} tenants")
+        umbrella_client.report_incident(exc, context={"scenario": "jwt_auth_cascade", "summary": summary})
+
+    return summary
+
+
+@app.post("/api/chaos/gateway-timeout")
+def trigger_gateway_timeout_chaos():
+    """Chaos Engine Button 6: External Payment Gateway Timeout & Circuit Breaker Trip (HTTP 504)."""
+    log_event("CHAOS_TRIGGERED", "Simulating External Payment Gateway Socket Hang (>1250ms timeout)", 200)
+    summary = run_payment_gateway_timeout_chaos(num_requests=10)
+
+    log_event(
+        "CIRCUIT_BREAKER_TRIPPED",
+        f"Gateway Timeout: {summary['failed_requests']}/10 payment transactions timed out (504 Gateway Timeout)",
+        504,
+        details=summary
+    )
+    if config.UMBRELLA_AGENT_ENABLED:
+        exc = TimeoutError(f"HTTPException: 504 Gateway Timeout: Upstream Razorpay/Stripe aggregator unresponsive")
+        umbrella_client.report_incident(exc, context={"scenario": "gateway_timeout", "summary": summary})
+
+    return summary
+
+
+@app.post("/api/chaos/schema-corruption")
+def trigger_schema_corruption_chaos():
+    """Chaos Engine Button 7: Payload Validation & Schema Corruption (HTTP 422 Unprocessable Entity)."""
+    log_event("CHAOS_TRIGGERED", "Firing Malformed Schema Payloads (Negative Rent, Null Fields)", 200)
+    summary = run_schema_corruption_chaos(num_requests=10)
+
+    log_event(
+        "SCHEMA_VALIDATION_REJECT",
+        f"Payload Corruption: {summary['failed_requests']}/10 requests rejected with 422 Unprocessable Entity",
+        422,
+        details=summary
+    )
+    if config.UMBRELLA_AGENT_ENABLED:
+        exc = ValueError(f"HTTPException: 422 Unprocessable Entity - Corrupted payload input rejected")
+        umbrella_client.report_incident(exc, context={"scenario": "schema_corruption", "summary": summary})
 
     return summary
 

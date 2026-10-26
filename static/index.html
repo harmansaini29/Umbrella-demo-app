@@ -72,6 +72,27 @@
       </button>
     </div>
 
+    <!-- Real-World Enterprise Chaos Scenarios -->
+    <div style="margin-top:12px; padding-top:12px; border-top:1px dashed #334155; display:flex; flex-direction:column; gap:8px;">
+      <div style="font-size:0.75rem; font-weight:700; color:#93c5fd; text-transform:uppercase; letter-spacing:0.5px;">
+        🌍 REAL-WORLD BACKEND CHAOS & FAULT INJECTION (INTERNET ENTERPRISE SCENARIOS):
+      </div>
+      <div class="button-row" style="margin-top:0;">
+        <button class="btn-danger" id="btn-chaos-lock" onclick="triggerSlowQueryLock()" style="background:#7c2d12; border:1px solid #ea580c;">
+          🔒 Unindexed Query / SQLite Lock Contention (>2000ms)
+        </button>
+        <button class="btn-warning" id="btn-chaos-jwt" onclick="triggerJwtAuthCascade()" style="background:#78350f; border:1px solid #d97706;">
+          🔑 Expired JWT / OAuth2 Cascade (HTTP 401)
+        </button>
+        <button class="btn-danger" id="btn-chaos-gateway" onclick="triggerGatewayTimeout()" style="background:#831843; border:1px solid #db2777;">
+          🌐 External Gateway Timeout (HTTP 504 / Breaker)
+        </button>
+        <button class="btn-warning" id="btn-chaos-schema" onclick="triggerSchemaCorruption()" style="background:#374151; border:1px solid #6b7280;">
+          ⚠️ Payload Schema Corruption (HTTP 422)
+        </button>
+      </div>
+    </div>
+
     <!-- Alert / Crash Status Banner -->
     <div id="alert-banner" class="alert-box"></div>
 

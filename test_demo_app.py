@@ -18,7 +18,11 @@ from models import Room, Booking, RentPayment
 from load_simulator import (
     run_10_simultaneous_payments,
     run_100_concurrent_tenants_1rps,
-    run_combined_concurrency_chaos
+    run_combined_concurrency_chaos,
+    run_slow_query_lock_chaos,
+    run_expired_jwt_auth_cascade,
+    run_payment_gateway_timeout_chaos,
+    run_schema_corruption_chaos
 )
 
 
@@ -168,6 +172,54 @@ class TestUmbrellaDemoApp(unittest.TestCase):
         self.assertEqual(res_recovered["failed_requests"], 0, "Scaled pool (POOL_SIZE=30) must handle combined chaos with 0 errors")
         print(f"\n[Verified Combined Chaos Recovery]: 110/110 requests passed! Avg Latency: {res_recovered['avg_latency_ms']} ms")
 
+    def test_07_slow_query_lock_contention(self):
+        """
+        Enterprise Scenario 1: Unindexed Slow Query / SQLite Exclusive Lock Contention (>2000ms delay).
+        Validates that exclusive write lock blocks concurrent transactions and produces predictable lock contention.
+        """
+        res = run_slow_query_lock_chaos(num_requests=10)
+        self.assertEqual(res["total_requests"], 10)
+        self.assertGreater(res["failed_requests"], 0, "Exclusive lock contention must produce failures under concurrency")
+        self.assertEqual(res["verification_pct"], 100.0)
+        print(f"\n[Verified SQLite Lock Contention]: {res['failed_requests']}/10 requests failed under lock ({res['failure_rate_pct']}%) - 100% Verified")
+
+    def test_08_expired_jwt_auth_cascade(self):
+        """
+        Enterprise Scenario 2: Expired JWT / OAuth2 Authentication Cascade.
+        Validates that 100% of expired tokens are intercepted and rejected with HTTP 401 Unauthorized.
+        """
+        res = run_expired_jwt_auth_cascade(num_requests=15)
+        self.assertEqual(res["total_requests"], 15)
+        self.assertEqual(res["failed_requests"], 15)
+        self.assertEqual(res["verification_pct"], 100.0)
+        self.assertIn("401", res["first_error_type"])
+        print(f"\n[Verified Expired JWT Auth Cascade]: 15/15 requests intercepted (100% security gate enforced)")
+
+    def test_09_external_payment_gateway_timeout(self):
+        """
+        Enterprise Scenario 3: External Payment Gateway Timeout & Circuit Breaker Trip.
+        Validates that upstream gateway timeout (>1250ms) trips circuit breaker with HTTP 504.
+        """
+        res = run_payment_gateway_timeout_chaos(num_requests=10)
+        self.assertEqual(res["total_requests"], 10)
+        self.assertEqual(res["failed_requests"], 10)
+        self.assertEqual(res["verification_pct"], 100.0)
+        self.assertIn("504", res["first_error_type"])
+        print(f"\n[Verified Gateway Timeout & Breaker]: 10/10 requests intercepted with HTTP 504 (100% Verified)")
+
+    def test_10_schema_corruption_validation(self):
+        """
+        Enterprise Scenario 4: Payload Validation & Schema Corruption.
+        Validates that malformed schema inputs (negative rent, nulls) are rejected with HTTP 422.
+        """
+        res = run_schema_corruption_chaos(num_requests=10)
+        self.assertEqual(res["total_requests"], 10)
+        self.assertEqual(res["failed_requests"], 10)
+        self.assertEqual(res["verification_pct"], 100.0)
+        self.assertIn("422", res["first_error_type"])
+        print(f"\n[Verified Schema Corruption]: 10/10 corrupted payloads blocked with HTTP 422 (100% Verified)")
+
 
 if __name__ == "__main__":
     unittest.main()
+
