@@ -345,9 +345,11 @@ def reset_demo_state():
 
 if __name__ == "__main__":
     import uvicorn
+    host = os.environ.get("DEMO_HOST", "127.0.0.1")
     print("=" * 80)
     print("UMBRELLA DEMO APP: KARAMSTAY PG RENTAL SERVICE LAUNCHING")
-    print(f"Port: {config.SERVICE_PORT} | Access UI at: http://localhost:{config.SERVICE_PORT}")
+    print(f"👉 OPEN IN BROWSER: http://localhost:{config.SERVICE_PORT} or http://127.0.0.1:{config.SERVICE_PORT}")
+    print("   (Note: Do NOT enter 0.0.0.0 in browser address bar)")
     print(f"UMBRELLA Protection: {config.UMBRELLA_AGENT_ENABLED} ({config.UMBRELLA_MISSION_CONTROL_URL})")
     print("=" * 80)
-    uvicorn.run(app, host="0.0.0.0", port=config.SERVICE_PORT)
+    uvicorn.run(app, host=host, port=config.SERVICE_PORT)
