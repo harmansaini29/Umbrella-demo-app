@@ -23,7 +23,11 @@ from sqlalchemy.orm import Session
 import config
 from database import get_db, init_db, engine, SessionLocal
 from models import Room, Booking, RentPayment
-from load_simulator import run_10_simultaneous_payments, run_100_concurrent_tenants_1rps
+from load_simulator import (
+    run_10_simultaneous_payments,
+    run_100_concurrent_tenants_1rps,
+    run_combined_concurrency_chaos
+)
 from umbrella_sdk import UmbrellaClient, UmbrellaConfig, UmbrellaFastAPIMiddleware
 
 logging.basicConfig(level=logging.INFO)
@@ -269,6 +273,28 @@ def trigger_100_users_load():
     return summary
 
 
+@app.post("/api/chaos/combined-chaos")
+def trigger_combined_chaos_load():
+    """Chaos Engine: Master Switch - 10 Simultaneous Payments + 100 Concurrent Tenants at 1 RPS."""
+    log_event("CHAOS_TRIGGERED", "SWITCH ON: 10 Payments (1.4s Lock) + 100 Tenants (1 RPS) Wave", 200)
+    summary = run_combined_concurrency_chaos()
+
+    if summary["failed_requests"] > 0:
+        log_event(
+            "BACKEND_CRASH",
+            f"Concurrency Failure: {summary['failed_requests']}/110 requests crashed (500 Error)",
+            500,
+            details=summary
+        )
+        if config.UMBRELLA_AGENT_ENABLED:
+            exc = TimeoutError(f"sqlalchemy.exc.TimeoutError: {summary['first_error_msg']}")
+            umbrella_client.report_incident(exc, context={"scenario": "combined_concurrency_chaos", "summary": summary})
+    else:
+        log_event("CHAOS_COMPLETED", "All 110 concurrent requests processed successfully with 0 errors!", 200)
+
+    return summary
+
+
 @app.get("/api/events")
 def get_recent_events():
     """Returns recent activity and failure logs for the live UI."""
@@ -277,8 +303,12 @@ def get_recent_events():
 
 @app.post("/api/config/reload")
 def reload_config():
-    """Dynamically reloads config.py after UMBRELLA patch application."""
-    init_db()
+    """Dynamically reloads config.py and recreates database pool after UMBRELLA patch application."""
+    import importlib
+    importlib.reload(config)
+    import database
+    importlib.reload(database)
+    database.init_db()
     log_event("CONFIG_RELOADED", f"Capacity reloaded: POOL_SIZE={config.POOL_SIZE}, MAX_OVERFLOW={config.MAX_OVERFLOW}", 200)
     return {
         "status": "reloaded",
@@ -304,7 +334,11 @@ def reset_demo_state():
         with open(cfg_file, "w", encoding="utf-8") as f:
             f.write(c)
 
-    init_db()
+    import importlib
+    importlib.reload(config)
+    import database
+    importlib.reload(database)
+    database.init_db()
     log_event("RESET_EXECUTED", "Demo database and pool reset to constrained state (POOL_SIZE=2)", 200)
     return {"message": "Reset to baseline (POOL_SIZE=2, MAX_OVERFLOW=0)."}
 

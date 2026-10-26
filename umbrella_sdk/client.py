@@ -27,6 +27,7 @@ class UmbrellaConfig:
         service_name: str = "demo_booking_service",
         repo_path: Optional[str] = None,
         config_file: str = "config.py",
+        service_url: str = "http://localhost:8002",
         auto_heal_enabled: bool = True,
         telemetry_interval_sec: float = 2.0,
         metrics_collector: Optional[Callable[[], Dict[str, Any]]] = None
@@ -36,6 +37,7 @@ class UmbrellaConfig:
         self.service_name = service_name
         self.repo_path = repo_path or os.getcwd()
         self.config_file = config_file
+        self.service_url = service_url
         self.auto_heal_enabled = auto_heal_enabled
         self.telemetry_interval_sec = telemetry_interval_sec
         self.metrics_collector = metrics_collector
@@ -47,6 +49,7 @@ class UmbrellaConfig:
             "service_name": self.service_name,
             "repo_path": self.repo_path,
             "config_file": self.config_file,
+            "service_url": self.service_url,
             "auto_heal_enabled": self.auto_heal_enabled,
             "telemetry_interval_sec": self.telemetry_interval_sec
         }
@@ -93,6 +96,7 @@ class UmbrellaClient:
             "service_name": self.config.service_name,
             "repo_path": self.config.repo_path,
             "config_file": self.config.config_file,
+            "service_url": self.config.service_url,
             "auto_heal_enabled": self.config.auto_heal_enabled,
             "registered_at": time.time(),
             "pid": os.getpid()
@@ -126,14 +130,31 @@ class UmbrellaClient:
         exc_type = type(exception).__name__
         exc_msg = str(exception)
 
-        # Parse AST file location from traceback
+        # Parse AST file location from traceback, identifying application source code
         tb_frames = traceback.extract_tb(exception.__traceback__) if exception.__traceback__ else []
         target_file = self.config.config_file
         target_line = 1
+        found_app_frame = False
+
         if tb_frames:
-            last_frame = tb_frames[-1]
-            target_file = last_frame.filename
-            target_line = last_frame.lineno
+            for frame in reversed(tb_frames):
+                fname = frame.filename
+                # Check if frame belongs to target service repo or is not internal site-package
+                if self.config.repo_path and os.path.abspath(self.config.repo_path) in os.path.abspath(fname):
+                    target_file = fname
+                    target_line = frame.lineno
+                    found_app_frame = True
+                    break
+                elif "site-packages" not in fname.lower() and "lib" not in fname.lower().split(os.sep):
+                    target_file = fname
+                    target_line = frame.lineno
+                    found_app_frame = True
+                    break
+
+            if not found_app_frame and tb_frames:
+                # If all frames are inside external libs (e.g. sqlalchemy pool), fallback to service config
+                target_file = self.config.config_file
+                target_line = 1
 
         payload = {
             "service_name": self.config.service_name,
@@ -143,8 +164,9 @@ class UmbrellaClient:
             "stack_trace": tb,
             "target_file": target_file,
             "target_line": target_line,
-            "context": context or {},
-            "repo_path": self.config.repo_path
+            "config_file": self.config.config_file,
+            "repo_path": self.config.repo_path,
+            "context": context or {}
         }
 
         logger.warning(f"[UMBRELLA SDK] Reporting incident {exc_type}: {exc_msg} to Mission Control...")

@@ -87,6 +87,62 @@ async function pollEvents() {
   }
 }
 
+async function triggerCombinedChaos() {
+  const btn = document.getElementById("btn-chaos-combined");
+  btn.disabled = true;
+  btn.textContent = "⚡ Running Combined Stress (110 Requests)...";
+
+  const banner = document.getElementById("alert-banner");
+  banner.style.display = "none";
+
+  try {
+    const res = await fetch("/api/chaos/combined-chaos", { method: "POST" });
+    const data = await res.json();
+
+    document.getElementById("m-total").textContent = data.total_requests;
+    document.getElementById("m-failed").textContent = data.failed_requests;
+    document.getElementById("m-fail-rate").textContent = `${data.failure_rate_pct}%`;
+    document.getElementById("m-latency").textContent = `${data.avg_latency_ms} ms`;
+
+    banner.style.display = "block";
+    const hudStatus = document.getElementById("hud-backend-status");
+
+    if (data.failed_requests > 0) {
+      hudStatus.textContent = "CRASH / DOWN (500)";
+      hudStatus.style.color = "var(--accent-red)";
+
+      banner.className = "alert-box alert-danger";
+      banner.innerHTML = `
+        <strong>🚨 BACKEND CRASH UNDER COMBINED CHAOS (10 PAYMENTS + 100 TENANTS AT 1 RPS):</strong><br>
+        <div style="margin-top:6px;">
+          • <strong>${data.failed_requests} out of ${data.total_requests} requests crashed with HTTP 500</strong> (${data.failure_rate_pct}% failure rate).<br>
+          • <strong>Failed Payments:</strong> ${data.failed_payments}/10 | <strong>Failed Bookings:</strong> ${data.failed_bookings}/100.<br>
+          • <strong>Root Exception:</strong> <code>${data.first_error_type}: ${data.first_error_msg}</code><br>
+          • <strong>Cause:</strong> Concurrency overload. 10 simultaneous payments + 100 concurrent tenants completely starved QueuePool (POOL_SIZE=${data.pool_size}).<br>
+          • <strong>UMBRELLA Agent Status:</strong> Incident dispatched live to Mission Control! Click "Launch UMBRELLA Auto-Healing" or authorize the patch in Mission Control.
+        </div>
+      `;
+    } else {
+      hudStatus.textContent = "HEALTHY";
+      hudStatus.style.color = "var(--accent-green)";
+
+      banner.className = "alert-box alert-success";
+      banner.innerHTML = `
+        <strong>🎉 ALL 110 REQUESTS (10 PAYMENTS + 100 TENANTS) PROCESSED SUCCESSFULLY!</strong><br>
+        Zero errors encountered! Avg Latency: ${data.avg_latency_ms} ms | P95 Latency: ${data.p95_latency_ms} ms. Capacity headroom is verified.
+      `;
+    }
+
+    pollEvents();
+    pollMetrics();
+  } catch (err) {
+    alert("Combined stress request error: " + err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "⚡ SWITCH ON: 10 Payments + 100 Tenants (1 RPS)";
+  }
+}
+
 async function trigger10Payments() {
   const btn = document.getElementById("btn-chaos-10");
   btn.disabled = true;

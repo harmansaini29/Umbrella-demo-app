@@ -15,7 +15,11 @@ from datetime import datetime
 import config
 from database import init_db, SessionLocal, engine
 from models import Room, Booking, RentPayment
-from load_simulator import run_10_simultaneous_payments, run_100_concurrent_tenants_1rps
+from load_simulator import (
+    run_10_simultaneous_payments,
+    run_100_concurrent_tenants_1rps,
+    run_combined_concurrency_chaos
+)
 
 
 class TestUmbrellaDemoApp(unittest.TestCase):
@@ -136,6 +140,33 @@ class TestUmbrellaDemoApp(unittest.TestCase):
         self.assertEqual(res_recovered["total_requests"], 100)
         self.assertEqual(res_recovered["failed_requests"], 0, "Scaled pool (POOL_SIZE=25) must handle 100 concurrent tenants")
         print(f"\n[Verified 100 Tenants Recovery]: 100/100 requests passed! Avg Latency: {res_recovered['avg_latency_ms']} ms")
+
+    def test_06_combined_concurrency_chaos(self):
+        """
+        Validates combined chaos load (10 simultaneous payments + 100 concurrent tenants).
+        Constrained pool must produce failures; scaled pool must handle all 110 requests cleanly.
+        """
+        # 1. Constrained pool
+        config.POOL_SIZE = 2
+        config.MAX_OVERFLOW = 0
+        config.POOL_TIMEOUT = 1.0
+        init_db()
+
+        res_crashed = run_combined_concurrency_chaos()
+        self.assertEqual(res_crashed["total_requests"], 110)
+        self.assertGreater(res_crashed["failed_requests"], 0, "Combined chaos must crash constrained pool")
+        print(f"\n[Verified Combined Chaos Crash]: {res_crashed['failed_requests']}/110 failed ({res_crashed['failure_rate_pct']}%)")
+
+        # 2. Scaled pool
+        config.POOL_SIZE = 30
+        config.MAX_OVERFLOW = 10
+        config.POOL_TIMEOUT = 5.0
+        init_db()
+
+        res_recovered = run_combined_concurrency_chaos()
+        self.assertEqual(res_recovered["total_requests"], 110)
+        self.assertEqual(res_recovered["failed_requests"], 0, "Scaled pool (POOL_SIZE=30) must handle combined chaos with 0 errors")
+        print(f"\n[Verified Combined Chaos Recovery]: 110/110 requests passed! Avg Latency: {res_recovered['avg_latency_ms']} ms")
 
 
 if __name__ == "__main__":

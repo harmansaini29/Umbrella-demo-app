@@ -210,6 +210,56 @@ def run_100_concurrent_tenants_1rps() -> Dict[str, Any]:
     }
 
 
+def run_combined_concurrency_chaos() -> Dict[str, Any]:
+    """
+    Fires BOTH 10 simultaneous rent payments (1.4s gateway lock)
+    AND 100 concurrent tenants browsing and booking at 1 RPS simultaneously.
+    Total: 110 concurrent requests creating maximum QueuePool contention.
+    """
+    database.init_db()
+    wall_start = time.time()
+    results: List[Dict[str, Any]] = []
+
+    with ThreadPoolExecutor(max_workers=35) as executor:
+        payment_futs = [executor.submit(simulate_single_payment, i + 1) for i in range(10)]
+        booking_futs = [executor.submit(simulate_room_browsing_and_booking, i + 1) for i in range(100)]
+        all_futs = payment_futs + booking_futs
+        for fut in as_completed(all_futs):
+            results.append(fut.result())
+
+    total_wall_ms = (time.time() - wall_start) * 1000.0
+    successful = [r for r in results if r["success"]]
+    failed = [r for r in results if not r["success"]]
+    latencies = [r["latency_ms"] for r in results]
+
+    avg_lat = sum(latencies) / len(latencies) if latencies else 0.0
+    p95_lat = sorted(latencies)[int(len(latencies) * 0.95)] if latencies else 0.0
+    first_err = failed[0] if failed else None
+
+    failed_payments = len([r for r in failed if r["action"] == "pay_rent"])
+    failed_bookings = len([r for r in failed if r["action"] == "browse_and_book"])
+
+    return {
+        "scenario": "combined_concurrency_chaos",
+        "description": "10 simultaneous payments + 100 concurrent tenants at 1 RPS",
+        "total_requests": 110,
+        "successful_requests": len(successful),
+        "failed_requests": len(failed),
+        "failed_payments": failed_payments,
+        "failed_bookings": failed_bookings,
+        "failure_rate_pct": round((len(failed) / 110.0) * 100.0, 1),
+        "avg_latency_ms": round(avg_lat, 2),
+        "p95_latency_ms": round(p95_lat, 2),
+        "total_wall_time_ms": round(total_wall_ms, 2),
+        "pool_size": config.POOL_SIZE,
+        "max_overflow": config.MAX_OVERFLOW,
+        "first_error_type": first_err["error_type"] if first_err else None,
+        "first_error_msg": first_err["error_msg"] if first_err else None,
+        "first_stack_trace": first_err["stack_trace"] if first_err else None,
+        "raw_results": results
+    }
+
+
 if __name__ == "__main__":
     print("=" * 80)
     print("UMBRELLA DEMO APP: CHAOS LOAD SIMULATOR")

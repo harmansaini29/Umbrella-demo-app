@@ -52,11 +52,14 @@
     </div>
 
     <div class="button-row">
+      <button class="btn-danger" id="btn-chaos-combined" onclick="triggerCombinedChaos()" style="font-weight:700; background:linear-gradient(135deg, #ef4444, #b91c1c); box-shadow:0 0 14px rgba(239,68,68,0.4); border:1px solid #f87171;">
+        ⚡ SWITCH ON: 10 Payments + 100 Tenants (1 RPS)
+      </button>
       <button class="btn-danger" id="btn-chaos-10" onclick="trigger10Payments()">
-        ⚡ Fire 10 Simultaneous Payments (1.4s Lock)
+        ⚡ Fire 10 Simultaneous Payments
       </button>
       <button class="btn-warning" id="btn-chaos-100" onclick="trigger100Users()">
-        🔥 Trigger 100 Concurrent Tenants Load (1 RPS)
+        🔥 Trigger 100 Tenants (1 RPS)
       </button>
       <button class="btn-outline" onclick="resetBackend()">
         🔄 Reset Backend (POOL_SIZE=2)
