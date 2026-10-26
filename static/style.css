@@ -1,17 +1,37 @@
+/* ==========================================================================
+   Umbrella Demo App: KaramStay PG Room Rental & Payment Service
+   Design System: Airbnb-Inspired Clean Aesthetic
+   Palette: Crisp Pure White (#FFFFFF), Slate Background (#F8FAFC),
+            Airbnb Coral / Pink-Reddish (#FF385C), Deep Slate Text (#0F172A)
+   ========================================================================== */
+
 :root {
-  --bg-primary: #0a0e17;
-  --bg-secondary: #111827;
-  --bg-card: #1f2937;
-  --bg-card-hover: #283548;
-  --accent-primary: #3b82f6;
-  --accent-hover: #2563eb;
-  --accent-green: #10b981;
-  --accent-red: #ef4444;
-  --accent-amber: #f59e0b;
-  --accent-purple: #8b5cf6;
-  --text-main: #f9fafb;
-  --text-muted: #9ca3af;
-  --border-color: #374151;
+  --airbnb-coral: #FF385C;
+  --airbnb-coral-hover: #E00B41;
+  --airbnb-coral-light: #FFF1F2;
+  --airbnb-coral-border: #FECDD3;
+
+  --bg-primary: #F8FAFC;
+  --bg-secondary: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #FFFFFF;
+
+  --accent-primary: #FF385C;
+  --accent-hover: #E00B41;
+  --accent-green: #059669;
+  --accent-red: #E11D48;
+  --accent-amber: #D97706;
+  --accent-purple: #7C3AED;
+
+  --text-main: #0F172A;
+  --text-body: #1E293B;
+  --text-muted: #64748B;
+  --border-color: #E2E8F0;
+
+  --card-radius: 16px;
+  --pill-radius: 9999px;
+  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 10px 25px -4px rgba(0, 0, 0, 0.08), 0 6px 10px -4px rgba(0, 0, 0, 0.03);
 }
 
 * {
@@ -21,19 +41,23 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Circular", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-primary);
-  color: var(--text-main);
+  color: var(--text-body);
   line-height: 1.5;
-  padding: 24px;
+  padding: 24px 32px;
+  -webkit-font-smoothing: antialiased;
 }
 
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--card-radius);
+  padding: 18px 24px;
   margin-bottom: 24px;
 }
 
@@ -44,22 +68,20 @@ header {
 }
 
 .brand-logo {
-  font-size: 2.2rem;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 1.6rem;
   font-weight: 900;
+  color: var(--airbnb-coral);
   letter-spacing: -0.5px;
 }
 
 .brand-badge {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  font-size: 0.75rem;
+  background: var(--airbnb-coral-light);
+  color: var(--airbnb-coral);
+  border: 1px solid var(--airbnb-coral-border);
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 9999px;
+  padding: 4px 12px;
+  border-radius: var(--pill-radius);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -73,31 +95,33 @@ header {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   padding: 10px 16px;
-  border-radius: 8px;
+  border-radius: 12px;
   min-width: 130px;
 }
 
 .hud-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
   color: var(--text-muted);
+  font-weight: 700;
   letter-spacing: 0.5px;
 }
 
 .hud-value {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 800;
-  margin-top: 4px;
+  color: var(--text-main);
+  margin-top: 2px;
 }
 
 /* Chaos Control Center */
 .chaos-panel {
-  background: linear-gradient(180deg, #182234 0%, #111827 100%);
-  border: 1px solid #2563eb;
-  border-radius: 12px;
-  padding: 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-card);
+  padding: 20px 24px;
   margin-bottom: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .chaos-header {
@@ -111,9 +135,9 @@ header {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 800;
-  color: #60a5fa;
+  color: var(--text-main);
 }
 
 .button-row {
@@ -124,74 +148,92 @@ header {
 }
 
 button {
-  background: var(--accent-primary);
-  color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  background: var(--bg-secondary);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  padding: 9px 18px;
+  border-radius: var(--pill-radius);
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.15s ease-in-out;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 button:hover {
-  background: var(--accent-hover);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .btn-danger {
-  background: #dc2626;
+  background: var(--airbnb-coral);
+  color: #FFFFFF;
+  border-color: var(--airbnb-coral);
 }
 .btn-danger:hover {
-  background: #b91c1c;
+  background: var(--airbnb-coral-hover);
+  border-color: var(--airbnb-coral-hover);
 }
 
 .btn-warning {
-  background: #d97706;
+  background: #D97706;
+  color: #FFFFFF;
+  border-color: #D97706;
 }
 .btn-warning:hover {
-  background: #b45309;
+  background: #B45309;
 }
 
 .btn-success {
-  background: #059669;
+  background: var(--accent-green);
+  color: #FFFFFF;
+  border-color: var(--accent-green);
 }
 .btn-success:hover {
   background: #047857;
 }
 
+.btn-primary {
+  background: var(--airbnb-coral);
+  color: #FFFFFF;
+  border-color: var(--airbnb-coral);
+}
+.btn-primary:hover {
+  background: var(--airbnb-coral-hover);
+}
+
 .btn-outline {
-  background: transparent;
+  background: #FFFFFF;
   border: 1px solid var(--border-color);
-  color: var(--text-main);
+  color: var(--text-body);
 }
 .btn-outline:hover {
-  background: var(--bg-card);
+  background: #F1F5F9;
+  border-color: #CBD5E1;
 }
 
 /* Live Alert Banner */
 .alert-box {
   padding: 14px 18px;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
   margin-top: 12px;
   display: none;
 }
 
 .alert-danger {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #fca5a5;
+  background: var(--airbnb-coral-light);
+  border: 1px solid var(--airbnb-coral-border);
+  color: var(--airbnb-coral);
 }
 
 .alert-success {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  color: #6ee7b7;
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  color: var(--accent-green);
 }
 
 /* Metrics Grid */
@@ -203,20 +245,22 @@ button:hover {
 }
 
 .metric-item {
-  background: rgba(15, 23, 42, 0.6);
+  background: #F8FAFC;
   border: 1px solid var(--border-color);
   padding: 10px 14px;
-  border-radius: 6px;
+  border-radius: 12px;
 }
 
 .metric-title {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--text-muted);
 }
 
 .metric-number {
   font-size: 1.25rem;
   font-weight: 800;
+  color: var(--text-main);
   margin-top: 2px;
 }
 
@@ -228,8 +272,9 @@ button:hover {
 }
 
 .section-title {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 800;
+  color: var(--text-main);
   margin-bottom: 16px;
   display: flex;
   align-items: center;
@@ -246,13 +291,15 @@ button:hover {
 .room-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 16px;
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-card);
+  padding: 18px;
   transition: all 0.2s ease;
 }
 
 .room-card:hover {
-  border-color: #60a5fa;
+  border-color: var(--airbnb-coral-border);
+  box-shadow: var(--shadow-hover);
   transform: translateY(-2px);
 }
 
@@ -264,20 +311,21 @@ button:hover {
 }
 
 .room-number {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 800;
-  color: #60a5fa;
+  color: var(--airbnb-coral);
 }
 
 .room-type {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 500;
   color: var(--text-muted);
 }
 
 .room-rent {
   font-size: 1.3rem;
   font-weight: 900;
-  color: #10b981;
+  color: var(--text-main);
   margin: 8px 0;
 }
 
@@ -297,8 +345,9 @@ button:hover {
 .feed-panel {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 16px;
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-card);
+  padding: 18px;
   display: flex;
   flex-direction: column;
   height: 600px;
@@ -307,8 +356,8 @@ button:hover {
 .feed-container {
   flex: 1;
   overflow-y: auto;
-  font-family: monospace;
-  font-size: 0.8rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.78rem;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -316,19 +365,23 @@ button:hover {
 }
 
 .feed-item {
-  background: #0b1120;
-  border-left: 3px solid #3b82f6;
+  background: #F8FAFC;
+  border-left: 3px solid var(--airbnb-coral);
   padding: 8px 12px;
-  border-radius: 4px;
+  border-radius: 6px;
+  color: var(--text-body);
 }
 
 .feed-err {
-  border-left-color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  border-left-color: var(--accent-red);
+  background: var(--airbnb-coral-light);
+  color: var(--accent-red);
 }
 
 .feed-success {
-  border-left-color: #10b981;
+  border-left-color: var(--accent-green);
+  background: #ECFDF5;
+  color: var(--accent-green);
 }
 
 /* Modal */
@@ -339,7 +392,7 @@ button:hover {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(15, 23, 42, 0.5);
   backdrop-filter: blur(4px);
   justify-content: center;
   align-items: center;
@@ -349,7 +402,8 @@ button:hover {
 .modal-box {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--card-radius);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   padding: 24px;
   width: 100%;
   max-width: 440px;
@@ -361,17 +415,19 @@ button:hover {
 
 .form-group label {
   display: block;
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
   margin-bottom: 6px;
 }
 
 .form-group input, .form-group select {
   width: 100%;
-  background: #030712;
+  background: #FFFFFF;
   border: 1px solid var(--border-color);
-  padding: 10px 12px;
-  border-radius: 6px;
-  color: white;
-  font-size: 0.9rem;
+  padding: 10px 14px;
+  border-radius: var(--pill-radius);
+  color: var(--text-main);
+  font-size: 0.88rem;
+  outline: none;
 }
