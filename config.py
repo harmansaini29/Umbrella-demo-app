@@ -10,8 +10,8 @@ import os
 DATABASE_URL = os.environ.get("DEMO_DATABASE_URL", "sqlite:///./karamstay_demo.sqlite")
 
 # Initially constrained pool settings to predictably demonstrate bottleneck under 10 concurrent users
-POOL_SIZE = int(os.environ.get("DEMO_POOL_SIZE", "10"))
-MAX_OVERFLOW = int(os.environ.get("DEMO_MAX_OVERFLOW", "5"))
+POOL_SIZE = int(os.environ.get("DEMO_POOL_SIZE", "2"))
+MAX_OVERFLOW = int(os.environ.get("DEMO_MAX_OVERFLOW", "0"))
 POOL_TIMEOUT = float(os.environ.get("DEMO_POOL_TIMEOUT", "1.0"))
 SERVICE_PORT = int(os.environ.get("DEMO_SERVICE_PORT", "8002"))
 
