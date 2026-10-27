@@ -76,13 +76,14 @@ def log_event(event_type: str, message: str, status_code: int = 200, details: Op
 # Setup UMBRELLA Client SDK Integration
 def collect_telemetry() -> Dict[str, Any]:
     """Collects real-time pool metrics for UMBRELLA Mission Control."""
-    checkedout = engine.pool.checkedout() if engine and hasattr(engine, "pool") else 0
-    size = engine.pool.size() if engine and hasattr(engine, "pool") else config.POOL_SIZE
+    eng = getattr(database, "engine", None) or engine
+    checkedout = eng.pool.checkedout() if eng and hasattr(eng, "pool") else 0
+    size = eng.pool.size() if eng and hasattr(eng, "pool") else config.POOL_SIZE
     return {
         "service_name": "karamstay_demo_app",
         "pool_size": size,
         "checked_out_connections": checkedout,
-        "overflow": engine.pool.overflow() if engine and hasattr(engine, "pool") else 0,
+        "overflow": eng.pool.overflow() if eng and hasattr(eng, "pool") else 0,
         "utilization_pct": round((checkedout / max(size, 1)) * 100.0, 1),
         "database_url": config.DATABASE_URL,
         "repo_path": os.path.abspath(os.path.dirname(__file__))
@@ -144,12 +145,13 @@ def health():
 
 @app.get("/metrics")
 def metrics():
-    checkedout = engine.pool.checkedout() if engine and hasattr(engine, "pool") else 0
-    size = engine.pool.size() if engine and hasattr(engine, "pool") else config.POOL_SIZE
+    eng = getattr(database, "engine", None) or engine
+    checkedout = eng.pool.checkedout() if eng and hasattr(eng, "pool") else 0
+    size = eng.pool.size() if eng and hasattr(eng, "pool") else config.POOL_SIZE
     return {
         "pool_size": size,
         "checked_out_connections": checkedout,
-        "overflow": engine.pool.overflow() if engine and hasattr(engine, "pool") else 0,
+        "overflow": eng.pool.overflow() if eng and hasattr(eng, "pool") else 0,
         "utilization_pct": round((checkedout / max(size, 1)) * 100.0, 1),
         "umbrella_agent_connected": config.UMBRELLA_AGENT_ENABLED
     }
@@ -392,6 +394,9 @@ def reload_config():
     import database
     importlib.reload(database)
     database.init_db()
+    global engine, SessionLocal
+    engine = database.engine
+    SessionLocal = database.SessionLocal
     log_event("CONFIG_RELOADED", f"Capacity reloaded: POOL_SIZE={config.POOL_SIZE}, MAX_OVERFLOW={config.MAX_OVERFLOW}", 200)
     return {
         "status": "reloaded",
@@ -422,6 +427,9 @@ def reset_demo_state():
     import database
     importlib.reload(database)
     database.init_db()
+    global engine, SessionLocal
+    engine = database.engine
+    SessionLocal = database.SessionLocal
     log_event("RESET_EXECUTED", "Demo database and pool reset to constrained state (POOL_SIZE=2)", 200)
     return {"message": "Reset to baseline (POOL_SIZE=2, MAX_OVERFLOW=0)."}
 
