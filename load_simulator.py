@@ -267,6 +267,10 @@ def simulate_single_booking_under_lock(tenant_id: int) -> Dict[str, Any]:
     try:
         db = database.SessionLocal()
         conn = db.connection()
+        try:
+            conn.exec_driver_sql("PRAGMA busy_timeout = 250")
+        except Exception:
+            pass
         time.sleep(0.05)
         # In SQLite, attempting to execute write on an exclusively locked database raises OperationalError
         room = db.query(Room).first()
