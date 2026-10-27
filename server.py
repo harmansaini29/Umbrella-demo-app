@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 import config
+import database
 from database import get_db, init_db, engine, SessionLocal
 from models import Room, Booking, RentPayment
 from load_simulator import (
